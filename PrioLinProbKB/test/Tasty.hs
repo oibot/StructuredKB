@@ -15,6 +15,10 @@ form1 = Implication (Negation atom1)
                     (Conjunction (Disjunction atom2 atom3)
                                  atom4)
 
+form2 = Implication atom1
+                    (Conjunction (Negation atom2)
+                                 atom3)
+
 -- Unit test
 
 testDisjunctionOutput :: TestTree
@@ -49,6 +53,25 @@ testValuationsLength :: TestTree
 testValuationsLength = HU.testCase "Number of valuations" $
     (2*2*2*2) HU.@=? length (valuations form1)
 
+testValuationNotSatisfiesAtom :: TestTree
+testValuationNotSatisfiesAtom = HU.testCase "False does not satisfy a" $
+    False HU.@=? satisfies atom1 [("a",False)]
+
+testValuationSatisfiesAtom :: TestTree
+testValuationSatisfiesAtom = HU.testCase "True does satisfy a" $
+    True HU.@=? satisfies atom1 [("a", True)]
+
+testValuationSatisfiesComplexFormula :: TestTree
+testValuationSatisfiesComplexFormula =
+    HU.testCase "[True, False, True] satisfies a --> -b * c" $
+        True HU.@=? satisfies form2 [("a", True), ("b", False), ("c", True)]
+
+testValuationNotSatisfiesComplexFormula :: TestTree
+testValuationNotSatisfiesComplexFormula =
+    HU.testCase "[True, True, True] does not satisfies a --> -b * c" $
+        False HU.@=? satisfies form2 [("a", True), ("b", True), ("c", True)]
+
+
 -- Main
 
 allTests :: TestTree
@@ -61,6 +84,10 @@ allTests = testGroup "All Tests" [
                         , testAtoms
                         , testValuationWithAtom
                         , testValuationsLength
+                        , testValuationNotSatisfiesAtom
+                        , testValuationSatisfiesAtom
+                        , testValuationSatisfiesComplexFormula
+                        , testValuationNotSatisfiesComplexFormula
                         ]
     ]
 

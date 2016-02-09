@@ -1,9 +1,8 @@
-{-# LANGUAGE LambdaCase #-}
-
 module Logic (
       Formula(..)
     , atoms
     , valuations
+    , satisfies
     ) where
 
 data Formula = Atom String
@@ -31,10 +30,22 @@ atoms (Conjunction f1 f2) = atoms f1 ++ atoms f2
 atoms (Implication f1 f2) = atoms f1 ++ atoms f2
 atoms (Equality f1 f2)    = atoms f1 ++ atoms f2
 
-type Valuation = [[(String,Bool)]]
+type Valuation = [(String,Bool)]
 
-valuations :: Formula -> Valuation
+valuations :: Formula -> [Valuation]
 valuations form = let as = atoms form
                    in mapM (\a -> [(a,True), (a,False)]) as
 
+class Satisfiable a where
+    satisfies :: a -> Valuation -> Bool
+
+instance Satisfiable Formula where
+    satisfies (Conjunction f1 f2) v = satisfies f1 v && satisfies f2 v
+    satisfies (Disjunction f1 f2) v = satisfies f1 v || satisfies f2 v
+    satisfies (Implication f1 f2) v = not (satisfies f1 v) || satisfies f2 v
+    satisfies (Equality f1 f2) v = satisfies f1 v == satisfies f2 v
+    satisfies (Negation f) v = not (satisfies f v)
+    satisfies (Atom a) v = case lookup a v of
+                             Just v' -> v'
+                             _       -> undefined
 
