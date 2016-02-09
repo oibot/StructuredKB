@@ -3,6 +3,7 @@
 module Logic (
       Formula(..)
     , atoms
+    , valuations
     ) where
 
 data Formula = Atom String
@@ -29,4 +30,11 @@ atoms (Disjunction f1 f2) = atoms f1 ++ atoms f2
 atoms (Conjunction f1 f2) = atoms f1 ++ atoms f2
 atoms (Implication f1 f2) = atoms f1 ++ atoms f2
 atoms (Equality f1 f2)    = atoms f1 ++ atoms f2
+
+type Valuation = [[(String,Bool)]]
+
+valuations :: Formula -> Valuation
+valuations form = let as = atoms form
+                   in mapM (\a -> [(a,True), (a,False)]) as
+
 

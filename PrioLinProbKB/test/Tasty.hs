@@ -41,6 +41,13 @@ testAtoms :: TestTree
 testAtoms = HU.testCase "List of atoms" $
     ["a", "b", "c", "d"] HU.@=? sort (atoms form1)
 
+testValuationWithAtom :: TestTree
+testValuationWithAtom = HU.testCase "Valuations for an atom" $
+    [[("a", True)], [("a", False)]] HU.@=? valuations atom1
+
+testValuationsLength :: TestTree
+testValuationsLength = HU.testCase "Number of valuations" $
+    (2*2*2*2) HU.@=? length (valuations form1)
 
 -- Main
 
@@ -52,6 +59,8 @@ allTests = testGroup "All Tests" [
                         , testEqualityOutput
                         , testNegationOutput
                         , testAtoms
+                        , testValuationWithAtom
+                        , testValuationsLength
                         ]
     ]
 
