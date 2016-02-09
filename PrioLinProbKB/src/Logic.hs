@@ -1,4 +1,9 @@
-module Logic where
+{-# LANGUAGE LambdaCase #-}
+
+module Logic (
+      Formula(..)
+    , atoms
+    ) where
 
 data Formula = Atom String
              | Formula `Disjunction` Formula
@@ -10,8 +15,18 @@ data Formula = Atom String
 
 instance Show Formula where
     show (Atom s) = s
-    show (f1 `Disjunction` f2) = show f1 ++ " + " ++ show f2
-    show (f1 `Conjunction` f2) = show f1 ++ "*" ++ show f2
-    show (f1 `Implication` f2) = show f1 ++ " --> " ++ show f2
-    show (f1 `Equality` f2) = show f1 ++ " <--> " ++ show f2
-    show (Negation f) = "-" ++ show f
+    show (f1 `Disjunction` f2) = "(" ++ show f1 ++ " + " ++ show f2 ++ ")"
+    show (f1 `Conjunction` f2) = "(" ++ show f1 ++  " * "  ++ show f2 ++ ")"
+    show (f1 `Implication` f2) = "(" ++ show f1 ++ " --> " ++ show f2 ++ ")"
+    show (f1 `Equality` f2) = "(" ++ show f1 ++ " <--> " ++ show f2 ++ ")"
+    show (Negation f) = "(" ++ "-" ++ show f ++ ")"
+
+
+atoms :: Formula -> [String]
+atoms (Atom a)            = [a]
+atoms (Negation f)        = atoms f
+atoms (Disjunction f1 f2) = atoms f1 ++ atoms f2
+atoms (Conjunction f1 f2) = atoms f1 ++ atoms f2
+atoms (Implication f1 f2) = atoms f1 ++ atoms f2
+atoms (Equality f1 f2)    = atoms f1 ++ atoms f2
+
