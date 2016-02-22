@@ -40,7 +40,7 @@ def falsified(rule, world):
 def signature(rules):
     sig = set()
     for p, c, _ in rules:
-        sig = p.atoms() | c.atoms() | sig
+        sig.update(p.atoms() | c.atoms())
     return sig
 
 def constraints_matrices(worlds, kbs, ic=[]):
