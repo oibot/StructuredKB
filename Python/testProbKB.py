@@ -79,15 +79,25 @@ class testProbabilisticKnowledgebases(unittest.TestCase):
     def testEffectOnNeutralWorld(self):
         self.assertEqual(effect(self.rule1, self.w3), .0)
 
-    def testSignatureFromKnowledgebase(self):
+    def testSignatureFromKnowledgebaseOnlyAtoms(self):
         kb = [self.rule1, self.rule2]
         s = set([self.x, self.y])
         self.assertEqual(signature(kb), s)
-        self.assertEqual(len(s), 2)
+
+    def testSignatureFromKnowledgebaseComplexFormulas(self):
+        r = Rule(true, self.x & self.y, .1)
+        s = set([self.x, self.y])
+        self.assertEqual(signature([r]), s)
 
     def testWorldsFromSignatureFromKnowledgebase(self):
         kb = [self.rule1, self.rule2]
         self.assertEqual(len(worlds(signature(kb))), 4)
+
+    def testConstraintMatrixWithEmptyKnowledgeBase(self):
+        Cs = constraints_matrices([{}], [])
+        self.assertEqual(len(Cs), 2) # tuple (IC, As)
+        self.assertFalse(Cs[0].size)
+        self.assertFalse(Cs[1].size)
 
     def testConstraintsMatrix(self):
         a, b = symbols('a,b')
@@ -95,9 +105,9 @@ class testProbabilisticKnowledgebases(unittest.TestCase):
         r2 = Rule(true, b, .6)
         r3 = Rule(a, b, .9)
         kb = [r1, r2, r3]
-        A = constraints_matrix(kb)
         ws = worlds(signature(kb))
-        self.assertEqual(A.shape, (len(kb), len(ws)))
+        _, As = constraints_matrices(ws, [kb])
+        self.assertEqual(As[0].shape, (len(kb), len(ws)))
 
     def testVerifyingMatrix(self):
         a, b = symbols('a,b')
@@ -120,9 +130,9 @@ class testProbabilisticKnowledgebases(unittest.TestCase):
         r2 = Rule(true, b, .6)
         r3 = Rule(a, b, .9)
         kb = [r1, r2, r3]
-        la, ua = query(r1, kb)
-        lb, ub = query(r2, kb)
-        lab, uab = query(r3, kb)
+        la, ua = query(r1, [kb])
+        lb, ub = query(r2, [kb])
+        lab, uab = query(r3, [kb])
         self.assertTrue(math.isclose(la, 0.7615, abs_tol=1e-4))
         self.assertTrue(math.isclose(ua, 0.7615, abs_tol=1e-4))
         self.assertTrue(math.isclose(lb, 0.6427, abs_tol=1e-4))
@@ -137,9 +147,9 @@ class testProbabilisticKnowledgebases(unittest.TestCase):
         r2 = Rule(true, b, .6)
         r3 = Rule(a, b, .9)
         kb = [r1, r2, r3]
-        la, ua = query(r1, kb, norm="1")
-        lb, ub = query(r2, kb, norm="1")
-        lab, uab = query(r3, kb, norm="1")
+        la, ua = query(r1, [kb], norm="1")
+        lb, ub = query(r2, [kb], norm="1")
+        lab, uab = query(r3, [kb], norm="1")
         self.assertTrue(math.isclose(la, 0.8, abs_tol=1e-2))
         self.assertTrue(math.isclose(ua, 0.8, abs_tol=1e-2))
         self.assertTrue(math.isclose(lb, 0.6, abs_tol=1e-2))
@@ -154,15 +164,42 @@ class testProbabilisticKnowledgebases(unittest.TestCase):
         r2 = Rule(true, b, .6)
         r3 = Rule(a, b, .9)
         kb = [r1, r2, r3]
-        la, ua = query(r1, kb, norm="inf")
-        lb, ub = query(r2, kb, norm="inf")
-        lab, uab = query(r3, kb, norm="inf")
+        la, ua = query(r1, [kb], norm="inf")
+        lb, ub = query(r2, [kb], norm="inf")
+        lab, uab = query(r3, [kb], norm="inf")
         self.assertTrue(math.isclose(la, 0.7586, abs_tol=1e-4))
         self.assertTrue(math.isclose(ua, 0.7586, abs_tol=1e-4))
         self.assertTrue(math.isclose(lb, 0.6413, abs_tol=1e-4))
         self.assertTrue(math.isclose(ub, 0.6413, abs_tol=1e-4))
         self.assertTrue(math.isclose(lab, 0.8454, abs_tol=1e-4))
         self.assertTrue(math.isclose(uab, 0.8454, abs_tol=1e-4))
+
+    def testQueryWith2NormAndIntegrityConstraints(self):
+        a, b = symbols('a,b')
+        r1 = Rule(true, a, 0.0)
+        r2 = Rule(true, b, 0.0)
+        r3 = Rule(true, a | b, 1.0)
+        kb = [r1, r2]
+        ic = [r3]
+        la, ua = query(r1, [kb], ic)
+        lb, ub = query(r2, [kb], ic)
+        lab, uab = query(r3, [kb], ic)
+        self.assertTrue(math.isclose(la, 0.5,))
+        self.assertTrue(math.isclose(ua, 0.5,))
+        self.assertTrue(math.isclose(lb, 0.5,))
+        self.assertTrue(math.isclose(ub, 0.5,))
+        self.assertTrue(math.isclose(lab, 1.0))
+        self.assertTrue(math.isclose(uab, 1.0))
+        r4 = Rule(a | b, a, 0.0)
+        r5 = Rule(a | b, b, 1.0)
+        l4, u4 = query(r4, [kb], ic)
+        l5, u5 = query(r5, [kb], ic)
+        self.assertTrue(math.isclose(l4, 0.5,))
+        self.assertTrue(math.isclose(u4, 0.5,))
+        self.assertTrue(math.isclose(l5, 0.5,))
+        self.assertTrue(math.isclose(u5, 0.5,))
+
+
 
 
 if __name__ == "__main__":

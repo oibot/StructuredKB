@@ -37,22 +37,16 @@ def verified(rule, world):
 def falsified(rule, world):
     return satisfies(world, rule[0]) and not satisfies(world, rule[1])
 
-# Generates a signatur out of a knowledgebase. All the formulas in the
-# rules of the knowledgebase become letters in the signature. A premise
-# can hold a tautology symbol, which must not be added to the signature
-def signature(kb):
+def signature(rules):
     sig = set()
-    for p, c, _ in kb:
-        if not p is sym.true: sig.add(p)
-        sig.add(c)
+    for p, c, _ in rules:
+        sig = p.atoms() | c.atoms() | sig
     return sig
 
-# A constraint matrix consists of rows for every rule in a knowledgebasea and
-# columns for the effects of a rule for every world.
-def constraints_matrix(kb):
-    sig = signature(kb)
-    ws = worlds(sig)
-    return np.array([[effect(c, w) for w in ws] for c in kb])
+def constraints_matrices(worlds, kbs, ic=[]):
+    A = np.array([[[effect(r, w) for w in worlds] for r in kb] for kb in kbs])
+    IC = np.array([[effect(r, w) for w in worlds] for r in ic])
+    return (IC, A)
 
 def verifying_matrix(worlds, rule):
     return np.array([1 if verified(rule, w) else 0 for w in worlds])
@@ -61,25 +55,33 @@ def falsifying_matrix(worlds, rule):
     return np.array([1 if falsified(rule, w) else 0 for w in worlds])
 
 
+
+
 ##################################################
 # QUERY
 ##################################################
 
-
-def query(rule, kb, norm="2"):
-    A = constraints_matrix(kb)
-    ws = worlds(signature(kb))
+# Entry point for queries
+def query(rule, kbs, ic=[], norm="2"):
+    rules = [r for kb in kbs for r in kb] + ic
+    ws = worlds(signature(rules))
+    IC, As = constraints_matrices(ws, kbs, ic)
     if norm == "2":
-        return query2norm(rule, ws, A)
+        return query2norm(rule, ws, As, IC)
     elif norm == "1":
-        return query1norm(rule, ws, A)
+        return query1norm(rule, ws, As)
     elif norm == "inf":
-        return queryInfnorm(rule, ws, A)
+        return queryInfnorm(rule, ws, As)
     else:
         return False
 
-def query2norm(rule, worlds, A):
-    _, incv = violation(worlds, A)
+##################################################
+#Query-Helper
+##################################################
+
+def query2norm(rule, worlds, As, IC=np.array([])):
+    A = As[0]
+    _, incv = violation(worlds, A, IC)
 
     fm = falsifying_matrix(worlds, rule)
     vm = verifying_matrix(worlds, rule)
@@ -90,13 +92,16 @@ def query2norm(rule, worlds, A):
             A*x == t*incv,
             cvx.sum_entries(x) == t,
             (vm + fm)*x == 1]
+    if IC.size:
+        cons += [IC*x == 0]
 
     l = entailment_lower(cons, vm, x)
     u = entailment_upper(cons, vm, x)
 
     return (l, u)
 
-def query1norm(rule, worlds, A):
+def query1norm(rule, worlds, As):
+    A = As[0]
     incm, _ = violation(worlds, A, norm="1")
 
     fm = falsifying_matrix(worlds, rule)
@@ -116,7 +121,8 @@ def query1norm(rule, worlds, A):
 
     return (l, u)
 
-def queryInfnorm(rule, worlds, A):
+def queryInfnorm(rule, worlds, As):
+    A = As[0]
     incm, _ = violation(worlds, A, norm="inf")
 
     fm = falsifying_matrix(worlds, rule)
@@ -134,6 +140,26 @@ def queryInfnorm(rule, worlds, A):
 
     return (l, u)
 
+def violation(worlds, A, IC=np.array([]), norm="2"):
+    x = cvx.Variable(len(worlds))
+    obj = violation_objective(x, A, norm=norm)
+    cons = [x >= 0, cvx.sum_entries(x) == 1]
+    if IC.size:
+        cons += [IC*x == 0]
+    prob = cvx.Problem(obj, cons)
+    incm = prob.solve()
+    return (incm, A*x.value)
+
+def violation_objective(x, A, norm="2"):
+    if norm == "2":
+        return cvx.Minimize(cvx.norm(A*x))
+    elif norm == "1":
+        return cvx.Minimize(cvx.norm(A*x, 1))
+    elif norm == "inf":
+        return cvx.Minimize(cvx.norm(A*x, "inf"))
+    else:
+        return nil
+
 def entailment_lower(cons, vm, x):
     obj = cvx.Minimize(vm*x)
     prob = cvx.Problem(obj, cons)
@@ -146,19 +172,3 @@ def entailment_upper(cons, vm, x):
     prob.solve()
     return prob.value if prob.status == "optimal" else 1
 
-def violation(worlds, A, norm="2"):
-    x = cvx.Variable(len(worlds))
-    obj = violation_objective(x, A, norm=norm)
-    cons = [x >= 0, cvx.sum_entries(x) == 1]
-    prob = cvx.Problem(obj, cons)
-    return (prob.solve(), A*x.value)
-
-def violation_objective(x, A, norm="2"):
-    if norm == "2":
-        return cvx.Minimize(cvx.norm(A*x))
-    elif norm == "1":
-        return cvx.Minimize(cvx.norm(A*x, 1))
-    elif norm == "inf":
-        return cvx.Minimize(cvx.norm(A*x, "inf"))
-    else:
-        return nil
