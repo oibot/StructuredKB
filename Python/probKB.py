@@ -15,7 +15,7 @@ Rule = collections.namedtuple('Rule', ['premise', 'conclusion', 'probability'])
 
 # A world satisfies a formula if the formula is true in this world
 def satisfies(world, formula):
-    return True if not formula else world[formula]
+    return True if formula else formula.subs(world)
 
 # A world satisfies a rule when the world satisfies both premise and conclusion
 def satisfies_rule(world, conditional):
