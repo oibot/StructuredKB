@@ -1,5 +1,5 @@
 import unittest
-from probKB import *
+from propKB import *
 from sympy import *
 import numpy as np
 import math
