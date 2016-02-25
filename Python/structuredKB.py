@@ -42,8 +42,6 @@ def falsifying_matrix(worlds, rule):
         for w in worlds])
 
 
-
-
 ##################################################
 # QUERY
 ##################################################
@@ -77,13 +75,48 @@ def query2norm(rule, worlds, As, IC, wf=lambda x: x):
     probU = cvx.Problem(cvx.Maximize(vm*P), cons)
     return (probL.solve(verbose=True), probU.solve(verbose=True))
 
+def querystrict2norm(rule, worlds, As, IC):
+    # violation vector
+    vs = strictviolation(worlds, As, IC)
+
+    #entailment
+    vm = verifying_matrix(worlds, rule)
+    fm = falsifying_matrix(worlds, rule)
+    P = cvx.Variable(len(worlds))
+    t = cvx.Variable()
+    cons = [P >= 0, t >= 0,
+            IC*P == 0,
+            cvx.sum_entries(P) == t,
+            (vm+fm)*P == 1]
+    cons += [As[i]*P == t*vs[-(i+1)] for i in range(len(As))]
+    probL = cvx.Problem(cvx.Minimize(vm*P), cons)
+    probU = cvx.Problem(cvx.Maximize(vm*P), cons)
+    return (probL.solve(verbose=True), probU.solve(verbose=True))
+
+
+def strictviolation(worlds, As, IC):
+    vs = []
+    for p in reversed(range(len(As))):
+        A = As[p]
+        P = cvx.Variable(len(worlds))
+        obj = cvx.Minimize(cvx.norm(A*P))
+        cons = [P >= 0, cvx.sum_entries(P) == 1]
+        if len(vs):
+            cons += [B*P == vs[-(i+1)] for i, B in enumerate(As[(p+1):])]
+        if len(IC):
+            cons += [IC*P == 0]
+            print("length of cons", len(cons))
+        prob = cvx.Problem(obj, cons)
+        incm = prob.solve(verbose=True)
+        vs += [A * P.value]
+    return vs
+
 def violation(worlds, A, IC=[], wf=lambda x: x):
     P = cvx.Variable(len(worlds))
     obj = cvx.Minimize(cvx.norm(A*P))
     cons = [P >= 0, cvx.sum_entries(P) == 1]
     if len(IC):
         cons += [IC*P == 0]
-        print(len(cons))
     prob = cvx.Problem(obj, cons)
     incm = prob.solve(verbose=True)
     incv = A * P.value

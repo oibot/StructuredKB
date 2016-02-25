@@ -258,6 +258,64 @@ class Weighted2NormTests(ExtractedSignatureTest):
         print("blacklisted(bob):")
         print ("lower: ", l6, " upper: ", u6)
 
+class Strict2NormTests(ExtractedSignatureTest):
+
+    def test_atoms(self):
+        self.assertEqual(str(self.exec_alice), "ex_a")
+        self.assertEqual(str(self.exec_bob), "ex_b")
+        self.assertEqual(str(self.employee_alice), "e_a")
+        self.assertEqual(str(self.employee_bob), "e_b")
+        self.assertEqual(str(self.blacklisted_alice), "b_a")
+        self.assertEqual(str(self.blacklisted_bob), "b_b")
+        self.assertEqual(str(self.access_alice_f1), "ga_af1")
+        self.assertEqual(str(self.access_alice_f2), "ga_af2")
+        self.assertEqual(str(self.access_bob_f1), "ga_bf1")
+        self.assertEqual(str(self.access_bob_f2), "ga_bf2")
+        self.assertEqual(str(self.confidential_f1), "c_f1")
+        self.assertEqual(str(self.confidential_f2), "c_f2")
+
+    def test_strict2norm(self):
+        ws = worlds(self.signature)
+        IC, As = constraints_matrices(ws, self.KB, self.ic)
+
+        vs = strictviolation(ws, As, IC)
+        print("length vs: ", len(vs))
+        print("shape for vs[0]: ", vs[0].shape)
+
+        q = Rule(true, self.access_alice_f1, 0.0)
+        l1, u1 = querystrict2norm(q, ws, As, IC)
+
+        q = Rule(true, self.access_alice_f2, 0.0)
+        l2, u2 = querystrict2norm(q, ws, As, IC)
+
+        q = Rule(true, self.access_bob_f1, 0.0)
+        l3, u3 = querystrict2norm(q, ws, As, IC)
+
+        q = Rule(true, self.access_bob_f2, 0.0)
+        l4, u4 = querystrict2norm(q, ws, As, IC)
+
+        q = Rule(true, self.blacklisted_alice, 0.0)
+        l5, u5 = querystrict2norm(q, ws, As, IC)
+
+        q = Rule(true, self.blacklisted_bob, 0.0)
+        l6, u6 = querystrict2norm(q, ws, As, IC)
+
+        print("grantAccess(alice, f1):")
+        print ("lower: ", l1, " upper: ", u1)
+        print("grantAccess(alice, f2):")
+        print ("lower: ", l2, " upper: ", u2)
+        print("grantAccess(bob, f1):")
+        print ("lower: ", l3, " upper: ", u3)
+        print("grantAccess(bob, f2):")
+        print ("lower: ", l4, " upper: ", u4)
+        print("blacklisted(alice):")
+        print ("lower: ", l5, " upper: ", u5)
+        print("blacklisted(bob):")
+        print ("lower: ", l6, " upper: ", u6)
+
+
+
+
 
 if __name__ == "__main__":
     s1 = unittest.TestLoader().loadTestsFromTestCase(SignatureTests)
