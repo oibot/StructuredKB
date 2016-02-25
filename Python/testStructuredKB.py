@@ -3,173 +3,129 @@ from sympy import *
 from structuredKB import *
 import math
 
-class TestStructuredKBsWithExample(unittest.TestCase):
+class SimpleSignatureTests(unittest.TestCase):
 
     def setUp(self):
-        # Test with small signature
-        self.signature1 = symbols('x,y,z')
-        self.x = self.signature1[0]
-        self.y = self.signature1[1]
-        self.z = self.signature1[2]
-        self.w1 = {self.x: True, self.y: False, self.z: False}
-        self.w2 = {self.x: True, self.y: True, self.z: False}
-        self.w3 = {self.x: False, self.y: False, self.z: False}
+        self.signature = symbols('x,y')
+        self.x = self.signature[0]
+        self.y = self.signature[1]
+        self.w1 = {self.x: True, self.y: False}
+        self.w2 = {self.x: True, self.y: True}
+        self.w3 = {self.x: False, self.y: False}
         self.rule1 = Rule(self.x, self.y, .8)
         self.rule2 = Rule(true, self.y, .8)
 
-        # Test example from Log4KR
-        sym = ("ga_af1, ga_af2, ga_bf1, ga_bf2,"
-               "b_a, b_b,"
-               "e_a, e_b,"
-               "ex_a, ex_b,"
-               "c_f1, c_f2")
-        self.signature2 = symbols(sym)
-        self.exec_alice = self.signature2[8]
-        self.exec_bob = self.signature2[9]
-        self.employee_alice = self.signature2[6]
-        self.employee_bob = self.signature2[7]
-        self.blacklisted_alice = self.signature2[4]
-        self.blacklisted_bob = self.signature2[5]
-        self.access_alice_f1 = self.signature2[0]
-        self.access_alice_f2 = self.signature2[1]
-        self.access_bob_f1 = self.signature2[2]
-        self.access_bob_f2 = self.signature2[3]
-        self.confidential_f1 = self.signature2[10]
-        self.confidential_f2 = self.signature2[11]
+class SignatureTests(SimpleSignatureTests):
 
-        r1 = Rule(self.exec_alice, self.employee_alice, 1.0)
-        r2 = Rule(self.exec_bob, self.employee_bob, 1.0)
-        r3 = Rule(self.blacklisted_alice, self.access_alice_f1, 0.0)
-        r4 = Rule(self.blacklisted_alice, self.access_alice_f2, 0.0)
-        r5 = Rule(self.blacklisted_bob, self.access_bob_f1, 0.0)
-        r6 = Rule(self.blacklisted_bob, self.access_bob_f2, 0.0)
-        ic = [r1, r2, r3, r4, r5, r6]
+    def test_signature_count(self):
+        self.assertEqual(len(self.signature), 2)
 
+    def test_signature_content(self):
+        self.assertEqual(self.signature, (self.x, self.y))
 
-    def testSignatureCount(self):
-        self.assertEqual(len(self.signature1), 3)
-        self.assertEqual(len(self.signature2), 12)
-
-    def testAtoms(self):
-        self.assertEqual(str(self.exec_alice), "ex_a")
-        self.assertEqual(str(self.exec_bob), "ex_b")
-        self.assertEqual(str(self.employee_alice), "e_a")
-        self.assertEqual(str(self.employee_bob), "e_b")
-        self.assertEqual(str(self.blacklisted_alice), "b_a")
-        self.assertEqual(str(self.blacklisted_bob), "b_b")
-        self.assertEqual(str(self.access_alice_f1), "ga_af1")
-        self.assertEqual(str(self.access_alice_f2), "ga_af2")
-        self.assertEqual(str(self.access_bob_f1), "ga_bf1")
-        self.assertEqual(str(self.access_bob_f2), "ga_bf2")
-        self.assertEqual(str(self.confidential_f1), "c_f1")
-        self.assertEqual(str(self.confidential_f2), "c_f2")
-
-    def testWorldsWithSymbols(self):
-        self.assertTrue(len(worlds(self.signature1) ) == 8)
-        self.assertTrue(len(worlds(self.signature2)) == 4096)
-
-    def testRuleConstruction(self):
-        x, y = symbols('x, y')
-        rule = Rule(x, y, .8)
-        self.assertEqual(rule.premise, x)
-        self.assertEqual(rule.conclusion, y)
-        self.assertEqual(rule.probability, .8)
-
-    def testWorldSatisfiesAtom(self):
-        self.assertTrue(satisfies(self.w1, self.x))
-
-    def testWorldDoesNotSatisfyAtom(self):
-        self.assertFalse(satisfies(self.w1, self.y))
-
-    def testWorldSatisfiesTautology(self):
-        self.assertTrue(satisfies(self.w1, true))
-
-    def testWorldSatisfiesComplexFormula(self):
-        self.assertTrue(satisfies(self.w1, self.x | self.y))
-
-    def testWorldDoesNotSatisfiesComplexFormula(self):
-        self.assertFalse(satisfies(self.w1, self.x & self.y))
-
-    def testWorldSatisfiesRule(self):
-        self.assertTrue(satisfies_rule(self.w2, self.rule1))
-
-    def testWorldDoesNotSatisfiesRule(self):
-        self.assertFalse(satisfies_rule(self.w1, self.rule1))
-
-    def testWorldSatisfiesRuleWithEmptyPremise(self):
-        self.assertTrue(satisfies_rule(self.w2, self.rule2))
-
-    def testWorldDoesNotSatifiesRuleWithEmptyPremise(self):
-        self.assertFalse(satisfies_rule(self.w1, self.rule2))
-
-    def testRuleIsVerifiedInWorld(self):
-        self.assertTrue(verified(self.rule1, self.w2))
-
-    def testRuleIsNotVerifiedInWorld(self):
-        self.assertFalse(verified(self.rule1, self.w1))
-
-    def testRuleIsFalsifiedInWorld(self):
-        self.assertTrue(falsified(self.rule1, self.w1))
-
-    def testRuleIsNotFalsifiedInWorld(self):
-        self.assertFalse(falsified(self.rule1, self.w2))
-
-    def testRuleIsNeitherVerifiedNorFalsified(self):
-        self.assertFalse(verified(self.rule1, self.w3))
-        self.assertFalse(falsified(self.rule1, self.w3))
-
-    def testEffectOnVerifiedWorld(self):
-        eff = 1 - self.rule1.probability
-        self.assertEqual(effect(self.rule1, self.w2), eff)
-
-    def testEffectOnFalsifiedWorld(self):
-        eff = -self.rule1.probability
-        self.assertEqual(effect(self.rule1, self.w1), eff)
-
-    def testEffectOnNeutralWorld(self):
-        self.assertEqual(effect(self.rule1, self.w3), .0)
-
-    def testSignatureFromKnowledgebaseOnlyAtoms(self):
+    def test_from_knowledgebase(self):
         kb = [self.rule1, self.rule2]
         s = set([self.x, self.y])
         self.assertEqual(signature(kb), s)
 
-    def testSignatureFromKnowledgebaseComplexFormulas(self):
+    def test_from_formulas(self):
         r = Rule(true, self.x & self.y, .1)
         s = set([self.x, self.y])
         self.assertEqual(signature([r]), s)
 
-    def testWorldsFromSignatureFromKnowledgebase(self):
+class RuleTests(SimpleSignatureTests):
+
+    def test_rule_construction(self):
+        rule = Rule(self.x, self.y, .8)
+        self.assertEqual(rule.premise, self.x)
+        self.assertEqual(rule.conclusion, self.y)
+        self.assertEqual(rule.probability, .8)
+
+    def test_rule_verified_in_world(self):
+        self.assertTrue(verified(self.rule1, self.w2))
+
+    def test_rule_not_verified_in_world(self):
+        self.assertFalse(verified(self.rule1, self.w1))
+
+    def test_rule_falsified_in_world(self):
+        self.assertTrue(falsified(self.rule1, self.w1))
+
+    def test_rule_not_falsified_in_world(self):
+        self.assertFalse(falsified(self.rule1, self.w2))
+
+    def test_rule_not_falsified_verified_in_world(self):
+        self.assertFalse(verified(self.rule1, self.w3))
+        self.assertFalse(falsified(self.rule1, self.w3))
+
+    def test_verified_world_effect(self):
+        eff = 1 - self.rule1.probability
+        self.assertEqual(effect(self.rule1, self.w2), eff)
+
+    def test_falsified_world_effect(self):
+        eff = -self.rule1.probability
+        self.assertEqual(effect(self.rule1, self.w1), eff)
+
+    def test_neutral_world_effect(self):
+        self.assertEqual(effect(self.rule1, self.w3), .0)
+
+class WorldGenerationTests(SimpleSignatureTests):
+
+    def test_world_size(self):
+        self.assertTrue(len(worlds(self.signature) ) == 4)
+
+    def test_world_not_satisfies_atom(self):
+        self.assertFalse(satisfies(self.w1, self.y))
+
+    def test_world_satisfies_tautology(self):
+        self.assertTrue(satisfies(self.w1, true))
+
+    def test_world_satisfies_formula(self):
+        self.assertTrue(satisfies(self.w1, self.x | self.y))
+
+    def test_world_not_satisfies_formula(self):
+        self.assertFalse(satisfies(self.w1, self.x & self.y))
+
+    def test_world_satisfies_rule(self):
+        self.assertTrue(satisfies_rule(self.w2, self.rule1))
+
+    def test_world_not_satisfies_rule(self):
+        self.assertFalse(satisfies_rule(self.w1, self.rule1))
+
+    def test_world_satisfies_empty_premise_rule(self):
+        self.assertTrue(satisfies_rule(self.w2, self.rule2))
+
+    def test_world_not_satisfies_empty_premise_rule(self):
+        self.assertFalse(satisfies_rule(self.w1, self.rule2))
+
+    def test_worlds_from_knowledgebase(self):
         kb = [self.rule1, self.rule2]
         self.assertEqual(len(worlds(signature(kb))), 4)
 
-    def testConstraintsMatrix(self):
-        a, b = symbols('a,b')
-        r1 = Rule(true, a, .8)
-        r2 = Rule(true, b, .6)
-        r3 = Rule(a, b, .9)
-        kb = [r1, r2, r3]
+class ConstraintsTests(SimpleSignatureTests):
+
+    def test_constraint_matrix(self):
+        kb = [self.rule1, self.rule2]
         ws = worlds(signature(kb))
         _, As = constraints_matrices(ws, [kb])
         self.assertEqual(As[0].shape, (len(kb), len(ws)))
         IC, _ = constraints_matrices(ws, [kb], ic=kb)
         self.assertEqual(IC.shape, (len(kb), len(ws)))
 
-    def testVerifyingMatrix(self):
-        a, b = symbols('a,b')
-        r = Rule(true, a, 0.9)
-        ws = worlds([a, b])
+    def test_verifying_matrix(self):
+        r = Rule(true, self.x, 0.9)
+        ws = worlds(self.signature)
         v = np.array([1,1,0,0])
         self.assertTrue(np.array_equal(verifying_matrix(ws, r), v))
 
-    def testFalsifyingMatrix(self):
-        a, b = symbols('a,b')
-        r = Rule(true, a, 0.9)
-        ws = worlds([a, b])
+    def test_falsifying_matrix(self):
+        r = Rule(true, self.x, 0.9)
+        ws = worlds(self.signature)
         v = np.array([0,0,1,1])
         self.assertTrue(np.array_equal(falsifying_matrix(ws, r), v))
 
-    def testConstraintMatrixHelper(self):
+class GeneralEntailmentTests(SimpleSignatureTests):
+
+    def test_constraint_matrix_helper(self):
         M = np.array([[2,2],
                       [2,2],
                       [4,4]])
@@ -178,7 +134,7 @@ class TestStructuredKBsWithExample(unittest.TestCase):
         A = constraintMat(As, wf)
         self.assertTrue(np.array_equal(A, M))
 
-    def testViolation1(self):
+    def test_violation1(self):
         a, b = symbols('a,b')
         r1 = Rule(true, a, .8)
         r2 = Rule(true, b, .6)
@@ -192,7 +148,7 @@ class TestStructuredKBsWithExample(unittest.TestCase):
         self.assertEqual(incv.shape, (len(kb), 1))
 
 
-    def testViolation2(self):
+    def test_violation2(self):
         a, b = symbols('a,b')
         r1 = Rule(true, a, .75)
         r2 = Rule(true, a, .5)
@@ -204,7 +160,7 @@ class TestStructuredKBsWithExample(unittest.TestCase):
         self.assertTrue(math.isclose(incm, .17677, abs_tol=1e-5))
         self.assertEqual(incv.shape, (len(kb), 1))
 
-    def testViolation3(self):
+    def test_violation3(self):
         canFly, bird, penguin = symbols('canFly, bird, penguin')
         r1 = Rule(bird, canFly, 1.0)
         r2 = Rule(penguin, canFly, 0.0)
@@ -231,78 +187,134 @@ class TestStructuredKBsWithExample(unittest.TestCase):
         self.assertTrue(math.isclose(incm, 0.5, abs_tol=1e-5))
         self.assertEqual(incv.shape, (len(kb), 1))
 
-    # def testViolation5(self):
-        r1 = Rule(true, self.access_alice_f1, 0.0)
-        r2 = Rule(true, self.access_alice_f2, 0.0)
-        r3 = Rule(true, self.access_bob_f1, 0.0)
-        r4 = Rule(true, self.access_bob_f2, 0.0)
-        r5 = Rule(true, self.blacklisted_bob, 0.05)
-        r6 = Rule(true, self.blacklisted_alice, 0.05)
-        kb1 = [r1, r2, r3, r4, r5, r6]
+class ExtractedSignatureTest(unittest.TestCase):
 
-        r7 = Rule(self.employee_alice, self.access_alice_f1, 0.5)
-        r8 = Rule(self.employee_alice, self.access_alice_f2, 0.5)
-        r9 = Rule(self.employee_bob, self.access_bob_f1, 0.5)
-        r10 = Rule(self.employee_bob, self.access_bob_f2, 0.5)
-        r11 = Rule(self.employee_alice, self.blacklisted_alice, 0.01)
-        r12 = Rule(self.employee_bob, self.blacklisted_bob, 0.01)
-        kb2 = [r7, r8, r9, r10, r11, r12]
+    def setUp(self):
+        sym = ("ga_af1, ga_af2, ga_bf1, ga_bf2,"
+               "b_a, b_b,"
+               "e_a, e_b,"
+               "ex_a, ex_b,"
+               "c_f1, c_f2")
+        self.signature = symbols(sym)
+        self.exec_alice = self.signature[8]
+        self.exec_bob = self.signature[9]
+        self.employee_alice = self.signature[6]
+        self.employee_bob = self.signature[7]
+        self.blacklisted_alice = self.signature[4]
+        self.blacklisted_bob = self.signature[5]
+        self.access_alice_f1 = self.signature[0]
+        self.access_alice_f2 = self.signature[1]
+        self.access_bob_f1 = self.signature[2]
+        self.access_bob_f2 = self.signature[3]
+        self.confidential_f1 = self.signature[10]
+        self.confidential_f2 = self.signature[11]
 
-        r13 = Rule(self.confidential_f1, self.access_alice_f1, 0.0)
-        r14 = Rule(self.confidential_f2, self.access_alice_f2, 0.0)
-        r15 = Rule(self.confidential_f1, self.access_bob_f1, 0.0)
-        r16 = Rule(self.confidential_f2, self.access_bob_f2, 0.0)
-        kb3 = [r13, r14, r15, r16]
+        self.r1 = Rule(self.exec_alice, self.employee_alice, 1.0)
+        self.r2 = Rule(self.exec_bob, self.employee_bob, 1.0)
+        self.r3 = Rule(self.blacklisted_alice, self.access_alice_f1, 0.0)
+        self.r4 = Rule(self.blacklisted_alice, self.access_alice_f2, 0.0)
+        self.r5 = Rule(self.blacklisted_bob, self.access_bob_f1, 0.0)
+        self.r6 = Rule(self.blacklisted_bob, self.access_bob_f2, 0.0)
+        self.ic = [self.r1, self.r2, self.r3, self.r4, self.r5, self.r6]
 
-        r17 = Rule(self.exec_alice, self.access_alice_f1, 0.7)
-        r18 = Rule(self.exec_alice, self.access_alice_f2, 0.7)
-        r19 = Rule(self.exec_bob, self.access_bob_f1, 0.7)
-        r20 = Rule(self.exec_bob, self.access_bob_f2, 0.7)
-        r21 = Rule(self.exec_bob, self.blacklisted_bob, 0.001)
-        r22 = Rule(self.exec_alice, self.blacklisted_alice, 0.001)
-        kb4 = [r17, r18, r19, r20, r21, r22]
+        self.r1 = Rule(true, self.access_alice_f1, 0.0)
+        self.r2 = Rule(true, self.access_alice_f2, 0.0)
+        self.r3 = Rule(true, self.access_bob_f1, 0.0)
+        self.r4 = Rule(true, self.access_bob_f2, 0.0)
+        self.r5 = Rule(true, self.blacklisted_bob, 0.05)
+        self.r6 = Rule(true, self.blacklisted_alice, 0.05)
+        self.kb1 = [self.r1, self.r2, self.r3, self.r4, self.r5, self.r6]
 
-        r23 = Rule(true, self.exec_alice, 1.0)
-        r24 = Rule(true, self.employee_bob, 1.0)
-        r25 = Rule(true, self.confidential_f1, 1.0)
-        kb5 = [r23, r24, r25]
+        self.r7 = Rule(self.employee_alice, self.access_alice_f1, 0.5)
+        self.r8 = Rule(self.employee_alice, self.access_alice_f2, 0.5)
+        self.r9 = Rule(self.employee_bob, self.access_bob_f1, 0.5)
+        self.r10 = Rule(self.employee_bob, self.access_bob_f2, 0.5)
+        self.r11 = Rule(self.employee_alice, self.blacklisted_alice, 0.01)
+        self.r12 = Rule(self.employee_bob, self.blacklisted_bob, 0.01)
+        self.kb2 = [self.r7, self.r8, self.r9, self.r10, self.r11, self.r12]
 
-        r26 = Rule(self.exec_alice, self.employee_alice, 1.0)
-        r27 = Rule(self.exec_bob, self.employee_bob, 1.0)
-        r28 = Rule(self.blacklisted_alice, self.access_alice_f1, 0.0)
-        r29 = Rule(self.blacklisted_alice, self.access_alice_f2, 0.0)
-        r30 = Rule(self.blacklisted_bob, self.access_bob_f1, 0.0)
-        r31 = Rule(self.blacklisted_bob, self.access_bob_f2, 0.0)
-        ic = [r26, r27, r28, r29, r30, r31]
+        self.r13 = Rule(self.confidential_f1, self.access_alice_f1, 0.0)
+        self.r14 = Rule(self.confidential_f2, self.access_alice_f2, 0.0)
+        self.r15 = Rule(self.confidential_f1, self.access_bob_f1, 0.0)
+        self.r16 = Rule(self.confidential_f2, self.access_bob_f2, 0.0)
+        self.kb3 = [self.r13, self.r14, self.r15, self.r16]
 
+        self.r17 = Rule(self.exec_alice, self.access_alice_f1, 0.7)
+        self.r18 = Rule(self.exec_alice, self.access_alice_f2, 0.7)
+        self.r19 = Rule(self.exec_bob, self.access_bob_f1, 0.7)
+        self.r20 = Rule(self.exec_bob, self.access_bob_f2, 0.7)
+        self.r21 = Rule(self.exec_bob, self.blacklisted_bob, 0.001)
+        self.r22 = Rule(self.exec_alice, self.blacklisted_alice, 0.001)
+        self.kb4 = [self.r17, self.r18, self.r19, self.r20, self.r21, self.r22]
+
+        self.r23 = Rule(true, self.exec_alice, 1.0)
+        self.r24 = Rule(true, self.employee_bob, 1.0)
+        self.r25 = Rule(true, self.confidential_f1, 1.0)
+        self.kb5 = [self.r23, self.r24, self.r25]
+
+        self.KB = [self.kb1, self.kb2, self.kb3, self.kb4, self.kb5]
+
+class Weighted2NormTests(ExtractedSignatureTest):
+
+    def test_atoms(self):
+        self.assertEqual(str(self.exec_alice), "ex_a")
+        self.assertEqual(str(self.exec_bob), "ex_b")
+        self.assertEqual(str(self.employee_alice), "e_a")
+        self.assertEqual(str(self.employee_bob), "e_b")
+        self.assertEqual(str(self.blacklisted_alice), "b_a")
+        self.assertEqual(str(self.blacklisted_bob), "b_b")
+        self.assertEqual(str(self.access_alice_f1), "ga_af1")
+        self.assertEqual(str(self.access_alice_f2), "ga_af2")
+        self.assertEqual(str(self.access_bob_f1), "ga_bf1")
+        self.assertEqual(str(self.access_bob_f2), "ga_bf2")
+        self.assertEqual(str(self.confidential_f1), "c_f1")
+        self.assertEqual(str(self.confidential_f2), "c_f2")
+
+    def test_violation5(self):
         wf = lambda x: 2*x
-        # ws = worlds(self.signature2)
-        # IC, As = constraints_matrices(ws, [kb1, kb2, kb3, kb4, kb5], ic)
-        # incm, incv = violation(ws, As, IC, wf=wf)
-        # print(incm)
-        KB = [kb1, kb2, kb3, kb4, kb5]
+        ws = worlds(self.signature)
+        IC, As = constraints_matrices(ws, self.KB, self.ic)
+
+        A = constraintMat(As, wf=wf)
+        incm, incv = violation(ws, A, IC=IC, wf=wf)
+
         q = Rule(true, self.access_alice_f1, 0.0)
-        l, u = query(q, KB, ic, wf=wf)
-        print(l)
-        print(u)
+        l1, u1 = query2norm(q, ws, As, IC, wf=wf)
 
+        q = Rule(true, self.access_alice_f2, 0.0)
+        l2, u2 = query2norm(q, ws, As, IC, wf=wf)
 
+        q = Rule(true, self.access_bob_f1, 0.0)
+        l3, u3 = query2norm(q, ws, As, IC, wf=wf)
 
+        q = Rule(true, self.access_bob_f2, 0.0)
+        l4, u4 = query2norm(q, ws, As, IC, wf=wf)
 
+        q = Rule(true, self.blacklisted_alice, 0.0)
+        l5, u5 = query2norm(q, ws, As, IC, wf=wf)
 
+        q = Rule(true, self.blacklisted_bob, 0.0)
+        l6, u6 = query2norm(q, ws, As, IC, wf=wf)
 
-    # def testWith_IC_KB5_W2(self):
+        print("grantAccess(alice, f1):")
+        print ("lower: ", l1, " upper: ", u1)
+        print("grantAccess(alice, f2):")
+        print ("lower: ", l2, " upper: ", u2)
+        print("grantAccess(bob, f1):")
+        print ("lower: ", l3, " upper: ", u3)
+        print("grantAccess(bob, f2):")
+        print ("lower: ", l4, " upper: ", u4)
+        print("blacklisted(alice):")
+        print ("lower: ", l5, " upper: ", u5)
+        print("blacklisted(bob):")
+        print ("lower: ", l6, " upper: ", u6)
 
-    #     q_bl_a = Rule(true, self.blacklisted_alice, 0.0)
-    #     q_bl_b = Rule(true, self.blacklisted_bob, 0.0)
-    #     q_ac_af1 = Rule(true, self.access_alice_f1, 0.0)
-    #     q_ac_af2 = Rule(true, self.access_alice_f2, 0.0)
-    #     q_ac_bf1 = Rule(true, self.access_bob_f1, 0.0)
-    #     q_ac_bf2 = Rule(true, self.access_bob_f2, 0.0)
-
-    #     l1, u1 = query(q_ac_af1, kbs)
-    #     self.assertEqual(l1, 0)
-    #     self.assertEqual(l2, 1)
 
 if __name__ == "__main__":
-    unittest.main()
+    s1 = unittest.TestLoader().loadTestsFromTestCase(SignatureTests)
+    s2 = unittest.TestLoader().loadTestsFromTestCase(RuleTests)
+    s3 = unittest.TestLoader().loadTestsFromTestCase(WorldGenerationTests)
+    s4 = unittest.TestLoader().loadTestsFromTestCase(ConstraintsTests)
+    s5 = unittest.TestLoader().loadTestsFromTestCase(GeneralEntailmentTests)
+    allTests = unittest.TestSuite([s1, s2, s3, s4, s5])
+    unittest.TextTestRunner(verbosity=2).run(allTests)
