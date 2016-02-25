@@ -10,12 +10,6 @@ def worlds(signature):
 
 Rule = collections.namedtuple('Rule', ['premise', 'conclusion', 'probability'])
 
-def satisfies(world, formula):
-    return formula.subs(world)
-
-def satisfies_rule(world, rule):
-    return satisfies(world, rule.premise) and satisfies(world, rule.conclusion)
-
 # The effect of a rule to a world. It is ...
 #   * (1-p) if the world satisfies the rule
 #   * -p if the world satisfies the rule with a negated conclusion
@@ -27,16 +21,6 @@ def effect(rule, world):
         return 1 - rule.probability
     else:
         return -rule.probability
-
-# A rule is verified in a world when the world satisfies premise and conclusion
-def verified(rule, world):
-    return satisfies(world, rule.premise) and satisfies(world, rule.conclusion)
-
-# A rule is falsified in a world when the world satisfies the premise
-# and the negation of the conculusion
-def falsified(rule, world):
-    return satisfies(world, rule.premise) and \
-            not satisfies(world, rule.conclusion)
 
 def signature(rules):
     sig = set()
@@ -50,10 +34,12 @@ def constraints_matrices(worlds, kbs, ic=[]):
     return (IC, As)
 
 def verifying_matrix(worlds, rule):
-    return np.array([1 if verified(rule, w) else 0 for w in worlds])
+    return np.array([1 if (rule.premise & rule.conclusion).subs(w) else 0
+        for w in worlds])
 
 def falsifying_matrix(worlds, rule):
-    return np.array([1 if falsified(rule, w) else 0 for w in worlds])
+    return np.array([1 if (rule.premise & ~rule.conclusion).subs(w) else 0
+        for w in worlds])
 
 
 

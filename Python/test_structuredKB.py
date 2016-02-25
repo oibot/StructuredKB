@@ -41,61 +41,10 @@ class RuleTests(SimpleSignatureTests):
         self.assertEqual(rule.conclusion, self.y)
         self.assertEqual(rule.probability, .8)
 
-    def test_rule_verified_in_world(self):
-        self.assertTrue(verified(self.rule1, self.w2))
-
-    def test_rule_not_verified_in_world(self):
-        self.assertFalse(verified(self.rule1, self.w1))
-
-    def test_rule_falsified_in_world(self):
-        self.assertTrue(falsified(self.rule1, self.w1))
-
-    def test_rule_not_falsified_in_world(self):
-        self.assertFalse(falsified(self.rule1, self.w2))
-
-    def test_rule_not_falsified_verified_in_world(self):
-        self.assertFalse(verified(self.rule1, self.w3))
-        self.assertFalse(falsified(self.rule1, self.w3))
-
-    def test_verified_world_effect(self):
-        eff = 1 - self.rule1.probability
-        self.assertEqual(effect(self.rule1, self.w2), eff)
-
-    def test_falsified_world_effect(self):
-        eff = -self.rule1.probability
-        self.assertEqual(effect(self.rule1, self.w1), eff)
-
-    def test_neutral_world_effect(self):
-        self.assertEqual(effect(self.rule1, self.w3), .0)
-
 class WorldGenerationTests(SimpleSignatureTests):
 
     def test_world_size(self):
         self.assertTrue(len(worlds(self.signature) ) == 4)
-
-    def test_world_not_satisfies_atom(self):
-        self.assertFalse(satisfies(self.w1, self.y))
-
-    def test_world_satisfies_tautology(self):
-        self.assertTrue(satisfies(self.w1, true))
-
-    def test_world_satisfies_formula(self):
-        self.assertTrue(satisfies(self.w1, self.x | self.y))
-
-    def test_world_not_satisfies_formula(self):
-        self.assertFalse(satisfies(self.w1, self.x & self.y))
-
-    def test_world_satisfies_rule(self):
-        self.assertTrue(satisfies_rule(self.w2, self.rule1))
-
-    def test_world_not_satisfies_rule(self):
-        self.assertFalse(satisfies_rule(self.w1, self.rule1))
-
-    def test_world_satisfies_empty_premise_rule(self):
-        self.assertTrue(satisfies_rule(self.w2, self.rule2))
-
-    def test_world_not_satisfies_empty_premise_rule(self):
-        self.assertFalse(satisfies_rule(self.w1, self.rule2))
 
     def test_worlds_from_knowledgebase(self):
         kb = [self.rule1, self.rule2]
