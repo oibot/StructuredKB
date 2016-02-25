@@ -21,12 +21,12 @@ def satisfies_rule(world, rule):
 #   * -p if the world satisfies the rule with a negated conclusion
 #   * it is 0 for a world that satisfies neither premise nor conclusion
 def effect(rule, world):
-    if verified(rule, world):
-        return 1 - rule.probability
-    elif falsified(rule, world):
-        return -rule.probability
-    else:
+    if (~rule.premise.subs(world)):
         return 0.0
+    elif rule.conclusion.subs(world):
+        return 1 - rule.probability
+    else:
+        return -rule.probability
 
 # A rule is verified in a world when the world satisfies premise and conclusion
 def verified(rule, world):
@@ -35,7 +35,8 @@ def verified(rule, world):
 # A rule is falsified in a world when the world satisfies the premise
 # and the negation of the conculusion
 def falsified(rule, world):
-    return satisfies(world, rule.premise) and not satisfies(world, rule.conclusion)
+    return satisfies(world, rule.premise) and \
+            not satisfies(world, rule.conclusion)
 
 def signature(rules):
     sig = set()
