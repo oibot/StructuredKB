@@ -3,17 +3,29 @@ import collections
 import numpy as np
 import cvxpy as cvx
 import sympy as sym
+from functools import reduce
 
-def worlds(signature):
+def worlds(signature, deters=[]):
     vs = product((True,False), repeat=len(signature))
-    return [dict(zip(signature, v)) for v in vs]
+    ws = []
+    if len(deters):
+        ds = [d.premise >> d.conclusion if d.probability == 1.0
+                else d.premise >> ~d.conclusion
+                for d in deters]
+        c = reduce(lambda x,y: x & y, ds)
+        for v in vs:
+            w = dict(zip(signature, v))
+            if c.subs(w): ws += [w]
+    else:
+        ws = [dict(zip(signature, v)) for v in vs]
+    return ws
 
 Rule = collections.namedtuple('Rule', ['premise', 'conclusion', 'probability'])
 
 # The effect of a rule to a world. It is ...
-#   * (1-p) if the world satisfies the rule
-#   * -p if the world satisfies the rule with a negated conclusion
-#   * it is 0 for a world that satisfies neither premise nor conclusion
+#   * 0 if the world does not satisfies the premise
+#   * (1-p) if the world satisfies premise and conclusion
+#   * -p if the world satisfies premise and negated conclusion
 def effect(rule, world):
     if (~rule.premise.subs(world)):
         return 0.0
@@ -46,17 +58,7 @@ def falsifying_matrix(worlds, rule):
 # QUERY
 ##################################################
 
-# Entry point for queries
-def query(rule, kbs, ic=[], norm="2", wf=lambda x: x):
-    rules = [r for kb in kbs for r in kb] + ic
-    ws = worlds(signature(rules))
-    IC, As = constraints_matrices(ws, kbs, ic)
-    if norm == "2":
-        return query2norm(rule, ws, As, IC)
-    else:
-        return False
-
-def query2norm(rule, worlds, As, IC, wf=lambda x: x):
+def queryweighted2norm(rule, worlds, As, IC, wf=lambda x: x):
     # violation vector
     A = constraintMat(As, wf)
     incm, incv = violation(worlds, A, IC, wf)

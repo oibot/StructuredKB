@@ -50,6 +50,16 @@ class WorldGenerationTests(SimpleSignatureTests):
         kb = [self.rule1, self.rule2]
         self.assertEqual(len(worlds(signature(kb))), 4)
 
+    def test_worlds_with_deterministic_positiv(self):
+        r = Rule(self.x, self.y, 1.0)
+        for w in worlds(self.signature, deters=[r]):
+            self.assertTrue((self.x >> self.y).subs(w))
+
+    def test_worlds_with_deterministic_negative(self):
+        r = Rule(self.x, self.y, 0.0)
+        for w in worlds(self.signature, deters=[r]):
+            self.assertTrue((self.x >> ~self.y).subs(w))
+
 class ConstraintsTests(SimpleSignatureTests):
 
     def test_constraint_matrix(self):
@@ -203,8 +213,6 @@ class ExtractedSignatureTest(unittest.TestCase):
 
         self.KB = [self.kb1, self.kb2, self.kb3, self.kb4, self.kb5]
 
-class Weighted2NormTests(ExtractedSignatureTest):
-
     def test_atoms(self):
         self.assertEqual(str(self.exec_alice), "ex_a")
         self.assertEqual(str(self.exec_bob), "ex_b")
@@ -219,9 +227,18 @@ class Weighted2NormTests(ExtractedSignatureTest):
         self.assertEqual(str(self.confidential_f1), "c_f1")
         self.assertEqual(str(self.confidential_f2), "c_f2")
 
+class ExtractedWorldGenerationTests(ExtractedSignatureTest):
+
+    def test_world_generation(self):
+        ws = worlds(self.signature, self.kb5+self.ic)
+        self.assertEqual(len(ws), 100)
+
+
+class Weighted2NormTests(ExtractedSignatureTest):
+
     def test_violation5(self):
         wf = lambda x: 2*x
-        ws = worlds(self.signature)
+        ws = worlds(self.signature, deters=self.kb5+self.ic)
         IC, As = constraints_matrices(ws, self.KB, self.ic)
 
         A = constraintMat(As, wf=wf)
@@ -275,7 +292,7 @@ class Strict2NormTests(ExtractedSignatureTest):
         self.assertEqual(str(self.confidential_f2), "c_f2")
 
     def test_strict2norm(self):
-        ws = worlds(self.signature)
+        ws = worlds(self.signature, deters=self.kb5+self.ic)
         IC, As = constraints_matrices(ws, self.KB, self.ic)
 
         vs = strictviolation(ws, As, IC)
@@ -323,5 +340,7 @@ if __name__ == "__main__":
     s3 = unittest.TestLoader().loadTestsFromTestCase(WorldGenerationTests)
     s4 = unittest.TestLoader().loadTestsFromTestCase(ConstraintsTests)
     s5 = unittest.TestLoader().loadTestsFromTestCase(GeneralEntailmentTests)
-    allTests = unittest.TestSuite([s1, s2, s3, s4, s5])
+    s6 = unittest.TestLoader().loadTestsFromTestCase(ExtractedSignatureTest)
+    s7 = unittest.TestLoader().loadTestsFromTestCase(ExtractedWorldGenerationTests)
+    allTests = unittest.TestSuite([s1, s2, s3, s4, s5, s6, s7])
     unittest.TextTestRunner(verbosity=2).run(allTests)
