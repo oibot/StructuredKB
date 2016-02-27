@@ -146,7 +146,7 @@ def constraintMat(As, wf=lambda x: x):
 
 def querystrictmodel(rule, worlds, As, IC, obj="2"):
     # violation vector
-    vs = strictviolation(worlds, As, IC)
+    incms, incvs = strictviolation(worlds, As, IC)
 
     #entailment
     vm = verifying_matrix(worlds, rule)
@@ -158,25 +158,54 @@ def querystrictmodel(rule, worlds, As, IC, obj="2"):
                 IC*P == 0,
                 cvx.sum_entries(P) == t,
                 (vm+fm)*P == 1]
-        cons += [As[i]*P == t*vs[-(i+1)] for i in range(len(As))]
+        cons += [As[i]*P == t*incvs[-(i+1)] for i in range(len(As))]
+    # elif obj == "1":
+    #     ys = [cvx.Variable(A.shape[0]) for A in As]
+    #     cons = [P >= 0, t >= 0,
+    #             IC*P == 0,
+    #             cvx.sum_entries(P) == t,
+    #             (vm+fm)*P == 1]
+    #     cons += [-ys[i] <= As[i]*P for i in range(len(As))]
+    #     cons += [As[i]*P <= ys[i] for i in range(len(As))]
+    #     cons += [cvx.sum_entries(ys[i]) == t*incms[-(i+1)] for i in range(len(As))]
+    elif obj == "inf":
+        cons = [P >= 0, t >= 0,
+                IC*P == 0,
+                cvx.sum_entries(P) == t,
+                (vm+fm)*P == 1]
+        cons += [As[i]*P <= t*incms[-(i+1)] for i in range(len(As))]
+        cons += [As[i]*P >= -t*incms[-(i+1)] for i in range(len(As))]
 
     probL = cvx.Problem(cvx.Minimize(vm*P), cons)
     probU = cvx.Problem(cvx.Maximize(vm*P), cons)
-    return (probL.solve(verbose=True), probU.solve(verbose=True))
+
+    probL.solve()
+    if probL.status == cvx.OPTIMAL or probL.status == cvx.OPTIMAL_INACCURATE:
+        l = probL.value
+    else:
+        l = 0
+    probU.solve()
+    if probU.status == cvx.OPTIMAL or probU.status == cvx.OPTIMAL_INACCURATE:
+        u = probU.value
+    else:
+        u = 1
+    return (l, u)
 
 
 def strictviolation(worlds, As, IC, obj="2"):
-    vs = []
+    incvs = []
+    incms = []
     for p in reversed(range(len(As))):
         A = As[p]
         if not np.any(A):
-            vs.append(np.zeros((A.shape[0], 1)))
+            incvs.append(np.zeros((A.shape[0], 1)))
+            incms.append(0.0)
             continue
 
         P = cvx.Variable(len(worlds))
         cons = [P >= 0, cvx.sum_entries(P) == 1]
-        if len(vs):
-            cons += [B*P == vs[-(i+1)] for i, B in enumerate(As[(p+1):])]
+        if len(incvs):
+            cons += [B*P == incvs[-(i+1)] for i, B in enumerate(As[(p+1):])]
         if len(IC):
             cons += [IC*P == 0]
 
@@ -185,11 +214,13 @@ def strictviolation(worlds, As, IC, obj="2"):
         elif obj == "q":
             Q = np.dot(np.transpose(A), A)
             prob = cvx.Problem(cvx.Minimize(cvx.quad_form(P, Q)), cons)
+        elif obj == "1":
+            prob = cvx.Problem(cvx.Minimize(cvx.norm(A*P, 1)), cons)
+        elif obj == "inf":
+            prob = cvx.Problem(cvx.Minimize(cvx.norm(A*P, "inf")), cons)
 
         prob.solve()
-        print("status ", p, ": ", prob.status)
-        print("value ", p, ": ", prob.value)
-        incm = prob.value
-        vs += [A * P.value]
-    return vs
+        incms += [prob.value]
+        incvs += [A * P.value]
+    return (incms, incvs)
 

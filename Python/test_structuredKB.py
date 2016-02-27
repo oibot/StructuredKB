@@ -477,9 +477,11 @@ class WeightedQuadFormTests(ExtendedExampleTest):
 class Strict2NormTests(ExtendedExampleTest):
 
     def test_violation_vector(self):
-        vs = strictviolation(self.ws, self.As, self.IC)
-        self.assertEqual(len(vs), 5)
-        self.assertFalse(np.any(vs[0]))
+        incms, incvs = strictviolation(self.ws, self.As, self.IC)
+        self.assertEqual(len(incvs), 5)
+        self.assertFalse(np.any(incvs[0]))
+        self.assertTrue(len(incms), 5)
+        self.assertEqual(incms[0], 0.0)
 
     def test_strict2norm(self):
         q = Rule(true, self.access_alice_f1, 0.0)
@@ -511,9 +513,11 @@ class Strict2NormTests(ExtendedExampleTest):
 class StrictQuadFormTests(ExtendedExampleTest):
 
     def test_violation_vector(self):
-        vs = strictviolation(self.ws, self.As, self.IC, obj="q")
-        self.assertEqual(len(vs), 5)
-        self.assertFalse(np.any(vs[0]))
+        incms, incvs = strictviolation(self.ws, self.As, self.IC, obj="q")
+        self.assertEqual(len(incvs), 5)
+        self.assertFalse(np.any(incvs[0]))
+        self.assertEqual(len(incms), 5)
+        self.assertEqual(incms[0], 0.0)
 
     def test_query(self):
         q = Rule(true, self.access_alice_f1, 0.0)
@@ -542,6 +546,72 @@ class StrictQuadFormTests(ExtendedExampleTest):
         self.assertTrue(math.isclose(l6, 0.01, abs_tol=5e-3))
         self.assertTrue(math.isclose(u6, 0.01, abs_tol=5e-3))
 
+@unittest.skip("Manhatten norm implementation is not sound")
+class StrictManhattenNormTests(ExtendedExampleTest):
+
+    def test_violation_vector(self):
+        incms, incvs = strictviolation(self.ws, self.As, self.IC, obj="1")
+        self.assertEqual(len(incvs), 5)
+        self.assertFalse(np.any(incvs[0]))
+        print("incms: ", incms)
+
+    def test_query(self):
+        q = Rule(true, self.access_alice_f1, 0.0)
+        l1, u1 = querystrictmodel(self.q_access_alice_f1, self.ws, self.As,
+                self.IC, obj="1")
+        # l2, u2 = querystrictmodel(self.q_access_alice_f2, self.ws, self.As,
+        #         self.IC, obj="1")
+        # l3, u3 = querystrictmodel(self.q_access_bob_f1, self.ws, self.As,
+        #         self.IC, obj="1")
+        # l4, u4 = querystrictmodel(self.q_access_bob_f2, self.ws, self.As,
+        #         self.IC, obj="1")
+        # l5, u5 = querystrictmodel(self.q_blacklisted_alice, self.ws, self.As,
+        #         self.IC, obj="1")
+        # l6, u6 = querystrictmodel(self.q_blacklisted_bob, self.ws, self.As,
+        #         self.IC, obj="1")
+        print("alice file 1: ", l1, " ", u1)
+        # print("alice file 2: ", l2, " ", u2)
+        # print("bob file 1: ", l3, " ", u3)
+        # print("bob file 2: ", l4, " ", u4)
+        # print("blacklisted alice: ", l5, " ", u5)
+        # print("blacklisted bob: ", l6, " ", u6)
+
+class StrictMaximumNormTests(ExtendedExampleTest):
+
+    def test_violation_vector(self):
+        incms, incvs = strictviolation(self.ws, self.As, self.IC, obj="inf")
+        self.assertEqual(len(incvs), 5)
+        self.assertFalse(np.any(incvs[0]))
+        self.assertEqual(len(incms), 5)
+        self.assertEqual(incms[0], 0.0)
+
+    def test_query(self):
+        q = Rule(true, self.access_alice_f1, 0.0)
+        l1, u1 = querystrictmodel(self.q_access_alice_f1, self.ws, self.As,
+                self.IC, obj="inf")
+        l2, u2 = querystrictmodel(self.q_access_alice_f2, self.ws, self.As,
+                self.IC, obj="inf")
+        l3, u3 = querystrictmodel(self.q_access_bob_f1, self.ws, self.As,
+                self.IC, obj="inf")
+        l4, u4 = querystrictmodel(self.q_access_bob_f2, self.ws, self.As,
+                self.IC, obj="inf")
+        l5, u5 = querystrictmodel(self.q_blacklisted_alice, self.ws, self.As,
+                self.IC, obj="inf")
+        l6, u6 = querystrictmodel(self.q_blacklisted_bob, self.ws, self.As,
+                self.IC, obj="inf")
+        self.assertTrue(l1 >= 0 and l1 <= 1)
+        self.assertTrue(u1 >= 0 and u1 <= 1)
+        self.assertTrue(l2 >= 0 and l2 <= 1)
+        self.assertTrue(u2 >= 0 and u2 <= 1)
+        self.assertTrue(l3 >= 0 and l3 <= 1)
+        self.assertTrue(u3 >= 0 and u3 <= 1)
+        self.assertTrue(l4 >= 0 and l4 <= 1)
+        self.assertTrue(u4 >= 0 and u4 <= 1)
+        self.assertTrue(l5 >= 0 and l5 <= 1)
+        self.assertTrue(u5 >= 0 and u5 <= 1)
+        self.assertTrue(l6 >= 0 and l6 <= 1)
+        self.assertTrue(u6 >= 0 and u6 <= 1)
+
 
 
 if __name__ == "__main__":
@@ -555,5 +625,9 @@ if __name__ == "__main__":
     s8 = unittest.TestLoader().loadTestsFromTestCase(WeightedMaximumNormTests)
     s9 = unittest.TestLoader().loadTestsFromTestCase(WeightedManhattenNormTests)
     s10 = unittest.TestLoader().loadTestsFromTestCase(WeightedQuadFormTests)
-    allTests = unittest.TestSuite([s1, s2, s3, s4, s5, s6, s7, s8, s9, s10])
+    s11 = unittest.TestLoader().loadTestsFromTestCase(Strict2NormTests)
+    s12 = unittest.TestLoader().loadTestsFromTestCase(StrictQuadFormTests)
+    s13 = unittest.TestLoader().loadTestsFromTestCase(StrictMaximumNormTests)
+    allTests = unittest.TestSuite([s1, s2, s3, s4, s5, s6, s7, s8, s9, s10,
+        s11, s12, s13])
     unittest.TextTestRunner(verbosity=2).run(allTests)
