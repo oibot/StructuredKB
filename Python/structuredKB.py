@@ -127,8 +127,6 @@ def violation(worlds, A, IC=[], wf=lambda x: x, obj="2"):
         prob = cvx.Problem(cvx.Minimize(cvx.norm(A*P, "inf")), cons)
 
     prob.solve()
-    print("status for violation: ", prob.status)
-    print("sum A: ", np.sum(A))
     incm = prob.value
     incv = A * P.value
     return (incm, incv)

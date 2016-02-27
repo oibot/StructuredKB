@@ -439,7 +439,40 @@ class WeightedManhattenNormTests(ExtendedExampleTest):
         self.assertTrue(l6 >= 0 and l6 <= 1)
         self.assertTrue(u6 >= 0 and u6 <= 1)
 
+class WeightedQuadFormTests(ExtendedExampleTest):
 
+    def test_violation(self):
+        A = constraintMat(self.As, self.wf)
+        incm, incv = violation(self.ws, A, self.IC, wf=self.wf, obj="q")
+        self.assertTrue(math.isclose(incm, 17.97121, abs_tol=1e-5))
+        self.assertTrue(math.isclose(np.sum(incv), 2.40, abs_tol=1e-2))
+
+    def test_query(self):
+        q = Rule(true, self.access_alice_f1, 0.0)
+        l1, u1 = queryweightedmodel(self.q_access_alice_f1, self.ws, self.As,
+                self.IC, wf=self.wf, obj="q")
+        l2, u2 = queryweightedmodel(self.q_access_alice_f2, self.ws, self.As,
+                self.IC, wf=self.wf, obj="q")
+        l3, u3 = queryweightedmodel(self.q_access_bob_f1, self.ws, self.As,
+                self.IC, wf=self.wf, obj="q")
+        l4, u4 = queryweightedmodel(self.q_access_bob_f2, self.ws, self.As,
+                self.IC, wf=self.wf, obj="q")
+        l5, u5 = queryweightedmodel(self.q_blacklisted_alice, self.ws, self.As,
+                self.IC, wf=self.wf, obj="q")
+        l6, u6 = queryweightedmodel(self.q_blacklisted_bob, self.ws, self.As,
+                self.IC, wf=self.wf, obj="q")
+        self.assertTrue(math.isclose(l1, 0.44, abs_tol=1e-4))
+        self.assertTrue(math.isclose(u1, 0.44, abs_tol=1e-4))
+        self.assertTrue(math.isclose(l2, 0.6285, abs_tol=1e-4))
+        self.assertTrue(math.isclose(u2, 0.6285, abs_tol=1e-4))
+        self.assertTrue(math.isclose(l3, 0.1428, abs_tol=1e-4))
+        self.assertTrue(math.isclose(u3, 0.1428, abs_tol=1e-4))
+        self.assertTrue(math.isclose(l4, 0.4, abs_tol=1e-4))
+        self.assertTrue(math.isclose(u4, 0.4, abs_tol=1e-4))
+        self.assertTrue(math.isclose(l5, 0.005, abs_tol=1e-4))
+        self.assertTrue(math.isclose(u5, 0.005, abs_tol=1e-4))
+        self.assertTrue(math.isclose(l6, 0.01799, abs_tol=1e-4))
+        self.assertTrue(math.isclose(u6, 0.01799, abs_tol=1e-4))
 
 class Strict2NormTests(ExtendedExampleTest):
 
@@ -482,15 +515,6 @@ class Strict2NormTests(ExtendedExampleTest):
         print("blacklisted(bob):")
         print ("lower: ", l6, " upper: ", u6)
 
-class WeightedQuadFormTests(ExtendedExampleTest):
-
-    def test_violation(self):
-        wf = lambda x: 2*x
-        ws = worlds(self.signature, deters=self.kb5+self.ic)
-        IC, As = constraints_matrices(ws, self.KB, self.ic)
-        incm, incv = violation(ws, constraintMat(As, wf), IC, wf=wf, obj="q")
-        self.assertTrue(math.isclose(incm, 17.97121, abs_tol=1e-5))
-        self.assertTrue(math.isclose(np.sum(incv), 2.40, abs_tol=1e-2))
 
 
 
@@ -504,5 +528,6 @@ if __name__ == "__main__":
     s7 = unittest.TestLoader().loadTestsFromTestCase(Weighted2NormTests)
     s8 = unittest.TestLoader().loadTestsFromTestCase(WeightedMaximumNormTests)
     s9 = unittest.TestLoader().loadTestsFromTestCase(WeightedManhattenNormTests)
-    allTests = unittest.TestSuite([s1, s2, s3, s4, s5, s6, s7, s8, s9])
+    s10 = unittest.TestLoader().loadTestsFromTestCase(WeightedQuadFormTests)
+    allTests = unittest.TestSuite([s1, s2, s3, s4, s5, s6, s7, s8, s9, s10])
     unittest.TextTestRunner(verbosity=2).run(allTests)
