@@ -55,7 +55,13 @@ def falsifying_matrix(worlds, rule):
 
 
 ##################################################
+##################################################
 # QUERY
+##################################################
+##################################################
+
+##################################################
+# Weitghted Priority Models
 ##################################################
 
 def queryweightedmodel(rule, worlds, As, IC, wf=lambda x: x, obj="2"):
@@ -92,11 +98,6 @@ def queryweightedmodel(rule, worlds, As, IC, wf=lambda x: x, obj="2"):
     probL = cvx.Problem(cvx.Minimize(vm*P), cons)
     probU = cvx.Problem(cvx.Maximize(vm*P), cons)
 
-    # return (probL.solve(solver=cvx.CVXOPT, verbose=True,
-    #                     kktsolver=cvx.ROBUST_KKTSOLVER),
-    #         probU.solve(solver=cvx.CVXOPT, verbose=True,
-    #                     kktsolver=cvx.ROBUST_KKTSOLVER))
-
     probL.solve()
     if probL.status == cvx.OPTIMAL or probL.status == cvx.OPTIMAL_INACCURATE:
         l = probL.value
@@ -131,7 +132,19 @@ def violation(worlds, A, IC=[], wf=lambda x: x, obj="2"):
     incv = A * P.value
     return (incm, incv)
 
-def querystrict2norm(rule, worlds, As, IC):
+
+def constraintMat(As, wf=lambda x: x):
+    cs = []
+    for idx, A in enumerate(As):
+        B = np.copy(A) * wf(idx+1)
+        cs += [B]
+    return np.vstack(cs)
+
+##################################################
+# Structured Priority Models
+##################################################
+
+def querystrictmodel(rule, worlds, As, IC, obj="2"):
     # violation vector
     vs = strictviolation(worlds, As, IC)
 
@@ -140,37 +153,43 @@ def querystrict2norm(rule, worlds, As, IC):
     fm = falsifying_matrix(worlds, rule)
     P = cvx.Variable(len(worlds))
     t = cvx.Variable()
-    cons = [P >= 0, t >= 0,
-            IC*P == 0,
-            cvx.sum_entries(P) == t,
-            (vm+fm)*P == 1]
-    cons += [As[i]*P == t*vs[-(i+1)] for i in range(len(As))]
+    if obj == "2" or obj == "q":
+        cons = [P >= 0, t >= 0,
+                IC*P == 0,
+                cvx.sum_entries(P) == t,
+                (vm+fm)*P == 1]
+        cons += [As[i]*P == t*vs[-(i+1)] for i in range(len(As))]
+
     probL = cvx.Problem(cvx.Minimize(vm*P), cons)
     probU = cvx.Problem(cvx.Maximize(vm*P), cons)
     return (probL.solve(verbose=True), probU.solve(verbose=True))
 
 
-def strictviolation(worlds, As, IC):
+def strictviolation(worlds, As, IC, obj="2"):
     vs = []
     for p in reversed(range(len(As))):
         A = As[p]
+        if not np.any(A):
+            vs.append(np.zeros((A.shape[0], 1)))
+            continue
+
         P = cvx.Variable(len(worlds))
-        obj = cvx.Minimize(cvx.norm(A*P))
         cons = [P >= 0, cvx.sum_entries(P) == 1]
         if len(vs):
             cons += [B*P == vs[-(i+1)] for i, B in enumerate(As[(p+1):])]
         if len(IC):
             cons += [IC*P == 0]
-            print("length of cons", len(cons))
-        prob = cvx.Problem(obj, cons)
-        incm = prob.solve(verbose=True)
+
+        if obj == "2":
+            prob = cvx.Problem(cvx.Minimize(cvx.norm(A*P)), cons)
+        elif obj == "q":
+            Q = np.dot(np.transpose(A), A)
+            prob = cvx.Problem(cvx.Minimize(cvx.quad_form(P, Q)), cons)
+
+        prob.solve()
+        print("status ", p, ": ", prob.status)
+        print("value ", p, ": ", prob.value)
+        incm = prob.value
         vs += [A * P.value]
     return vs
 
-
-def constraintMat(As, wf=lambda x: x):
-    cs = []
-    for idx, A in enumerate(As):
-        B = np.copy(A) * wf(idx+1)
-        cs += [B]
-    return np.vstack(cs)

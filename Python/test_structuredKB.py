@@ -476,45 +476,71 @@ class WeightedQuadFormTests(ExtendedExampleTest):
 
 class Strict2NormTests(ExtendedExampleTest):
 
+    def test_violation_vector(self):
+        vs = strictviolation(self.ws, self.As, self.IC)
+        self.assertEqual(len(vs), 5)
+        self.assertFalse(np.any(vs[0]))
+
     def test_strict2norm(self):
-        ws = worlds(self.signature, deters=self.kb5+self.ic)
-        IC, As = constraints_matrices(ws, self.KB, self.ic)
-
-        vs = strictviolation(ws, As, IC)
-        print("length vs: ", len(vs))
-        print("shape for vs[0]: ", vs[0].shape)
-
         q = Rule(true, self.access_alice_f1, 0.0)
-        l1, u1 = querystrict2norm(q, ws, As, IC)
+        l1, u1 = querystrictmodel(self.q_access_alice_f1, self.ws, self.As,
+                self.IC)
+        l2, u2 = querystrictmodel(self.q_access_alice_f2, self.ws, self.As,
+                self.IC)
+        l3, u3 = querystrictmodel(self.q_access_bob_f1, self.ws, self.As,
+                self.IC)
+        l4, u4 = querystrictmodel(self.q_access_bob_f2, self.ws, self.As,
+                self.IC)
+        l5, u5 = querystrictmodel(self.q_blacklisted_alice, self.ws, self.As,
+                self.IC)
+        l6, u6 = querystrictmodel(self.q_blacklisted_bob, self.ws, self.As,
+                self.IC)
+        self.assertTrue(math.isclose(l1, 0.7, abs_tol=5e-2))
+        self.assertTrue(math.isclose(u1, 0.7, abs_tol=5e-2))
+        self.assertTrue(math.isclose(l2, 0.7, abs_tol=5e-2))
+        self.assertTrue(math.isclose(u2, 0.7, abs_tol=5e-2))
+        self.assertTrue(math.isclose(l3, 0.0, abs_tol=5e-2))
+        self.assertTrue(math.isclose(u3, 0.0, abs_tol=5e-2))
+        self.assertTrue(math.isclose(l4, 0.5, abs_tol=5e-2))
+        self.assertTrue(math.isclose(u4, 0.5, abs_tol=5e-2))
+        self.assertTrue(math.isclose(l5, 0.001, abs_tol=1e-4))
+        self.assertTrue(math.isclose(u5, 0.001, abs_tol=1e-4))
+        self.assertTrue(math.isclose(l6, 0.01, abs_tol=5e-3))
+        self.assertTrue(math.isclose(u6, 0.01, abs_tol=5e-3))
 
-        q = Rule(true, self.access_alice_f2, 0.0)
-        l2, u2 = querystrict2norm(q, ws, As, IC)
+class StrictQuadFormTests(ExtendedExampleTest):
 
-        q = Rule(true, self.access_bob_f1, 0.0)
-        l3, u3 = querystrict2norm(q, ws, As, IC)
+    def test_violation_vector(self):
+        vs = strictviolation(self.ws, self.As, self.IC, obj="q")
+        self.assertEqual(len(vs), 5)
+        self.assertFalse(np.any(vs[0]))
 
-        q = Rule(true, self.access_bob_f2, 0.0)
-        l4, u4 = querystrict2norm(q, ws, As, IC)
-
-        q = Rule(true, self.blacklisted_alice, 0.0)
-        l5, u5 = querystrict2norm(q, ws, As, IC)
-
-        q = Rule(true, self.blacklisted_bob, 0.0)
-        l6, u6 = querystrict2norm(q, ws, As, IC)
-
-        print("grantAccess(alice, f1):")
-        print ("lower: ", l1, " upper: ", u1)
-        print("grantAccess(alice, f2):")
-        print ("lower: ", l2, " upper: ", u2)
-        print("grantAccess(bob, f1):")
-        print ("lower: ", l3, " upper: ", u3)
-        print("grantAccess(bob, f2):")
-        print ("lower: ", l4, " upper: ", u4)
-        print("blacklisted(alice):")
-        print ("lower: ", l5, " upper: ", u5)
-        print("blacklisted(bob):")
-        print ("lower: ", l6, " upper: ", u6)
-
+    def test_query(self):
+        q = Rule(true, self.access_alice_f1, 0.0)
+        l1, u1 = querystrictmodel(self.q_access_alice_f1, self.ws, self.As,
+                self.IC, obj="q")
+        l2, u2 = querystrictmodel(self.q_access_alice_f2, self.ws, self.As,
+                self.IC, obj="q")
+        l3, u3 = querystrictmodel(self.q_access_bob_f1, self.ws, self.As,
+                self.IC, obj="q")
+        l4, u4 = querystrictmodel(self.q_access_bob_f2, self.ws, self.As,
+                self.IC, obj="q")
+        l5, u5 = querystrictmodel(self.q_blacklisted_alice, self.ws, self.As,
+                self.IC, obj="q")
+        l6, u6 = querystrictmodel(self.q_blacklisted_bob, self.ws, self.As,
+                self.IC, obj="q")
+        self.assertTrue(math.isclose(l1, 0.7, abs_tol=5e-2))
+        self.assertTrue(math.isclose(u1, 0.7, abs_tol=5e-2))
+        self.assertTrue(math.isclose(l2, 0.7, abs_tol=5e-2))
+        self.assertTrue(math.isclose(u2, 0.7, abs_tol=5e-2))
+        self.assertTrue(math.isclose(l3, 0.0, abs_tol=5e-2))
+        self.assertTrue(math.isclose(u3, 0.0, abs_tol=5e-2))
+        self.assertTrue(math.isclose(l4, 0.5, abs_tol=5e-2))
+        self.assertTrue(math.isclose(u4, 0.5, abs_tol=5e-2))
+        self.assertTrue(math.isclose(l5, 0.001, abs_tol=1e-4))
+        self.assertTrue(math.isclose(u5, 0.001, abs_tol=1e-4))
+        self.assertTrue(math.isclose(l6, 0.01, abs_tol=5e-3))
+        self.assertTrue(math.isclose(u6, 0.01, abs_tol=5e-3))
 
 
 
