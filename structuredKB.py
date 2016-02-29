@@ -86,7 +86,8 @@ def queryweightedmodel(rule, worlds, As, IC, wf=lambda x: x, obj="2"):
                  -y <= A*P, A*P <= y,
                  cvx.sum_entries(y) == t*incm]
     elif obj == "inf":
-        cons = [-t*incm <= A*P, A*P <= t*incm]
+        cons += [-t*incm <= A*P, A*P <= t*incm]
+        print("length cons: ", len(cons))
 
     probL = cvx.Problem(cvx.Minimize(vm*P), cons)
     probU = cvx.Problem(cvx.Maximize(vm*P), cons)
