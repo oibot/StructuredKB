@@ -102,7 +102,7 @@ class GeneralEntailmentTests(SimpleSignatureTests):
         ws = worlds(signature(kb))
         _, As = constraints_matrices(ws, [kb])
         A = constraintMat(As)
-        incm, incv = violation(ws, A)
+        incm, incv = weightedviolation(ws, A)
         self.assertTrue(math.isclose(incm, 0.07158, abs_tol=1e-5))
         self.assertEqual(incv.shape, (len(kb), 1))
 
@@ -115,7 +115,7 @@ class GeneralEntailmentTests(SimpleSignatureTests):
         kb = [r1, r2]
         _, As = constraints_matrices(ws, [kb])
         A = constraintMat(As)
-        incm, incv = violation(ws, A)
+        incm, incv = weightedviolation(ws, A)
         self.assertTrue(math.isclose(incm, .17677, abs_tol=1e-5))
         self.assertEqual(incv.shape, (len(kb), 1))
 
@@ -128,7 +128,7 @@ class GeneralEntailmentTests(SimpleSignatureTests):
         ws = worlds(signature(kb))
         _, As = constraints_matrices(ws, [kb])
         A = constraintMat(As)
-        incm, incv = violation(ws, A)
+        incm, incv = weightedviolation(ws, A)
         self.assertTrue(math.isclose(incm, 0.0, abs_tol=1e-5))
         self.assertEqual(incv.shape, (len(kb), 1))
 
@@ -142,7 +142,7 @@ class GeneralEntailmentTests(SimpleSignatureTests):
         ws = worlds(signature(kb))
         _, As = constraints_matrices(ws, [kb])
         A = constraintMat(As)
-        incm, incv = violation(ws, A)
+        incm, incv = weightedviolation(ws, A)
         self.assertTrue(math.isclose(incm, 0.5, abs_tol=1e-5))
         self.assertEqual(incv.shape, (len(kb), 1))
 
@@ -305,14 +305,14 @@ class Weighted2NormTests(ExtendedExampleTest):
 
     def test_violation_vector(self):
         A = constraintMat(self.As, wf=self.wf)
-        incm, incv = violation(self.ws, A, IC=self.IC, wf=self.wf)
+        incm, incv = weightedviolation(self.ws, A, IC=self.IC, wf=self.wf)
         self.assertEqual(incv.shape, (25, 1))
         self.assertTrue(incm > 0)
 
     def test_violation_vector_wf_exponential(self):
         wf2 = lambda x: x**10
         A = constraintMat(self.As, wf=wf2)
-        incm, incv = violation(self.ws, A, IC=self.IC, wf=wf2)
+        incm, incv = weightedviolation(self.ws, A, IC=self.IC, wf=wf2)
         self.assertEqual(incv.shape, (25, 1))
         self.assertTrue(incm > 0)
 
@@ -374,7 +374,7 @@ class WeightedMaximumNormTests(ExtendedExampleTest):
 
     def test_violation_vector(self):
         A = constraintMat(self.As, wf=self.wf)
-        incm, incv = violation(self.ws, A, IC=self.IC, wf=self.wf, obj="inf")
+        incm, incv = weightedviolation(self.ws, A, IC=self.IC, wf=self.wf, obj="inf")
         self.assertEqual(incv.shape, (25, 1))
         self.assertTrue(incm > 0)
 
@@ -408,7 +408,7 @@ class WeightedManhattenNormTests(ExtendedExampleTest):
 
     def test_violation_vector(self):
         A = constraintMat(self.As, wf=self.wf)
-        incm, incv = violation(self.ws, A, IC=self.IC, wf=self.wf, obj="1")
+        incm, incv = weightedviolation(self.ws, A, IC=self.IC, wf=self.wf, obj="1")
         self.assertEqual(incv.shape, (25, 1))
         self.assertTrue(incm > 0)
 
@@ -443,7 +443,7 @@ class WeightedQuadFormTests(ExtendedExampleTest):
 
     def test_violation(self):
         A = constraintMat(self.As, self.wf)
-        incm, incv = violation(self.ws, A, self.IC, wf=self.wf, obj="q")
+        incm, incv = weightedviolation(self.ws, A, self.IC, wf=self.wf, obj="q")
         self.assertTrue(math.isclose(incm, 17.97121, abs_tol=1e-5))
         self.assertTrue(math.isclose(np.sum(incv), 2.40, abs_tol=1e-2))
 

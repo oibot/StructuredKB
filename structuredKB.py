@@ -67,33 +67,26 @@ def falsifying_matrix(worlds, rule):
 def queryweightedmodel(rule, worlds, As, IC, wf=lambda x: x, obj="2"):
     # violation vector
     A = constraintMat(As, wf)
-    incm, incv = violation(worlds, A, IC, wf, obj=obj)
+    incm, incv = weightedviolation(worlds, A, IC, wf, obj=obj)
 
     # entailment
     vm = verifying_matrix(worlds, rule)
     fm = falsifying_matrix(worlds, rule)
     P = cvx.Variable(len(worlds))
     t = cvx.Variable()
+    cons = [P >= 0, t >= 0,
+            IC*P == 0,
+            cvx.sum_entries(P) == t,
+            (vm+fm)*P == 1]
     if obj == "2" or obj == "q":
-        cons = [P >= 0, t >= 0,
-                IC*P == 0,
-                A*P == t*incv,
-                cvx.sum_entries(P) == t,
-                (vm+fm)*P == 1]
+        cons += [A*P == t*incv]
     elif obj == "1":
         y = cvx.Variable(A.shape[0])
-        cons = [P >= 0, t >= 0, y >= 0,
-                -y <= A*P, A*P <= y,
-                cvx.sum_entries(y) == t*incm,
-                IC*P == 0,
-                cvx.sum_entries(P) == t,
-                (vm+fm)*P == 1]
+        cons += [y >= 0,
+                 -y <= A*P, A*P <= y,
+                 cvx.sum_entries(y) == t*incm]
     elif obj == "inf":
-        cons = [P >= 0, t >= 0,
-                -t*incm <= A*P, A*P <= t*incm,
-                IC*P == 0,
-                cvx.sum_entries(P) == t,
-                (vm+fm)*P == 1]
+        cons = [-t*incm <= A*P, A*P <= t*incm]
 
     probL = cvx.Problem(cvx.Minimize(vm*P), cons)
     probU = cvx.Problem(cvx.Maximize(vm*P), cons)
@@ -110,7 +103,7 @@ def queryweightedmodel(rule, worlds, As, IC, wf=lambda x: x, obj="2"):
         u = 1
     return (l, u)
 
-def violation(worlds, A, IC=[], wf=lambda x: x, obj="2"):
+def weightedviolation(worlds, A, IC=[], wf=lambda x: x, obj="2"):
     P = cvx.Variable(len(worlds))
 
     cons = [P >= 0, cvx.sum_entries(P) == 1]
@@ -153,11 +146,11 @@ def querystrictmodel(rule, worlds, As, IC, obj="2"):
     fm = falsifying_matrix(worlds, rule)
     P = cvx.Variable(len(worlds))
     t = cvx.Variable()
+    cons = [P >= 0, t >= 0,
+            IC*P == 0,
+            cvx.sum_entries(P) == t,
+            (vm+fm)*P == 1]
     if obj == "2" or obj == "q":
-        cons = [P >= 0, t >= 0,
-                IC*P == 0,
-                cvx.sum_entries(P) == t,
-                (vm+fm)*P == 1]
         cons += [As[i]*P == t*incvs[-(i+1)] for i in range(len(As))]
     # elif obj == "1":
     #     ys = [cvx.Variable(A.shape[0]) for A in As]
@@ -169,10 +162,6 @@ def querystrictmodel(rule, worlds, As, IC, obj="2"):
     #     cons += [As[i]*P <= ys[i] for i in range(len(As))]
     #     cons += [cvx.sum_entries(ys[i]) == t*incms[-(i+1)] for i in range(len(As))]
     elif obj == "inf":
-        cons = [P >= 0, t >= 0,
-                IC*P == 0,
-                cvx.sum_entries(P) == t,
-                (vm+fm)*P == 1]
         cons += [As[i]*P <= t*incms[-(i+1)] for i in range(len(As))]
         cons += [As[i]*P >= -t*incms[-(i+1)] for i in range(len(As))]
 
