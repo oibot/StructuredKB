@@ -64,7 +64,7 @@ def falsifying_matrix(worlds, rule):
 # Weitghted Priority Models
 ##################################################
 
-def queryweightedmodel(rule, worlds, As, IC, wf=lambda x: x, obj="2"):
+def queryweightedmodel(rule, worlds, As, IC=[], wf=lambda x: x, obj="2"):
     # violation vector
     A = constraintMat(As, wf)
     incm, incv = weightedviolation(worlds, A, IC, wf, obj=obj)
@@ -75,9 +75,11 @@ def queryweightedmodel(rule, worlds, As, IC, wf=lambda x: x, obj="2"):
     P = cvx.Variable(len(worlds))
     t = cvx.Variable()
     cons = [P >= 0, t >= 0,
-            IC*P == 0,
             cvx.sum_entries(P) == t,
             (vm+fm)*P == 1]
+    if len(IC):
+        cons += [IC*P == 0]
+
     if obj == "2" or obj == "q":
         cons += [A*P == t*incv]
     elif obj == "1":
@@ -137,7 +139,7 @@ def constraintMat(As, wf=lambda x: x):
 # Structured Priority Models
 ##################################################
 
-def querystrictmodel(rule, worlds, As, IC, obj="2"):
+def querystrictmodel(rule, worlds, As, IC=[], obj="2"):
     # violation vector
     incms, incvs = strictviolation(worlds, As, IC)
 
@@ -147,9 +149,11 @@ def querystrictmodel(rule, worlds, As, IC, obj="2"):
     P = cvx.Variable(len(worlds))
     t = cvx.Variable()
     cons = [P >= 0, t >= 0,
-            IC*P == 0,
             cvx.sum_entries(P) == t,
             (vm+fm)*P == 1]
+    if len(IC):
+        cons += [IC*P == 0]
+
     if obj == "2" or obj == "q":
         cons += [As[i]*P == t*incvs[-(i+1)] for i in range(len(As))]
     # elif obj == "1":
