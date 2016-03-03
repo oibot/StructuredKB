@@ -185,7 +185,7 @@ def querystrictmodel(rule, worlds, As, IC=[], obj="2"):
     return (l, u)
 
 
-def strictviolation(worlds, As, IC, obj="2"):
+def strictviolation(worlds, As, IC=[], obj="2"):
     incvs = []
     incms = []
     for p in reversed(range(len(As))):
