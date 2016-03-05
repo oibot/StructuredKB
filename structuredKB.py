@@ -9,8 +9,8 @@ def worlds(signature, deters=[]):
     vs = product((True,False), repeat=len(signature))
     ws = []
     if len(deters):
-        ds = [d.premise >> d.conclusion if d.probability == 1.0
-                else d.premise >> ~d.conclusion
+        ds = [d.prem >> d.conc if d.prob == 1.0
+                else d.prem >> ~d.conc
                 for d in deters]
         c = reduce(lambda x,y: x & y, ds)
         for v in vs:
@@ -20,19 +20,19 @@ def worlds(signature, deters=[]):
         ws = [dict(zip(signature, v)) for v in vs]
     return ws
 
-Rule = collections.namedtuple('Rule', ['premise', 'conclusion', 'probability'])
+Rule = collections.namedtuple('Rule', ['prem', 'conc', 'prob'])
 
 # The effect of a rule to a world. It is ...
 #   * 0 if the world does not satisfies the premise
 #   * (1-p) if the world satisfies premise and conclusion
 #   * -p if the world satisfies premise and negated conclusion
 def effect(rule, world):
-    if (~rule.premise.subs(world)):
+    if (~rule.prem.subs(world)):
         return 0.0
-    elif rule.conclusion.subs(world):
-        return 1 - rule.probability
+    elif rule.conc.subs(world):
+        return 1 - rule.prob
     else:
-        return -rule.probability
+        return -rule.prob
 
 def signature(rules):
     sig = set()
@@ -46,11 +46,11 @@ def constraints_matrices(worlds, kbs, ic=[]):
     return (IC, As)
 
 def verifying_matrix(worlds, rule):
-    return np.array([1 if (rule.premise & rule.conclusion).subs(w) else 0
+    return np.array([1 if (rule.prem & rule.conc).subs(w) else 0
         for w in worlds])
 
 def falsifying_matrix(worlds, rule):
-    return np.array([1 if (rule.premise & ~rule.conclusion).subs(w) else 0
+    return np.array([1 if (rule.prem & ~rule.conc).subs(w) else 0
         for w in worlds])
 
 

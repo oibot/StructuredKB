@@ -37,9 +37,9 @@ class RuleTests(SimpleSignatureTests):
 
     def test_rule_construction(self):
         rule = Rule(self.x, self.y, .8)
-        self.assertEqual(rule.premise, self.x)
-        self.assertEqual(rule.conclusion, self.y)
-        self.assertEqual(rule.probability, .8)
+        self.assertEqual(rule.prem, self.x)
+        self.assertEqual(rule.conc, self.y)
+        self.assertEqual(rule.prob, .8)
 
 class WorldGenerationTests(SimpleSignatureTests):
 
