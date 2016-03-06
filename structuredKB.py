@@ -141,7 +141,7 @@ def constraintMat(As, wf=lambda x: x):
 
 def querystrictmodel(rule, worlds, As, IC=[], obj="2"):
     # violation vector
-    incms, incvs = strictviolation(worlds, As, IC)
+    incms, incvs = strictviolation(worlds, As, IC, obj=obj)
 
     #entailment
     vm = verifying_matrix(worlds, rule)
